@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Klassenquiz – Timer + Punkte + Team-Reihenfolge</title>
+  <style>
+    :root{--bg:#0b1220;--text:#e9eefc;--muted:#a9b4d0;--border:rgba(255,255,255,.12);--shadow:0 16px 40px rgba(0,0,0,.35);--radius:18px;}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(124,92,255,.35), transparent 60%),
+      radial-gradient(900px 500px at 90% 0%, rgba(29,211,176,.25), transparent 55%),var(--bg);
+      color:var(--text);min-height:100vh;}
+    header{padding:22px 18px 8px;max-width:1100px;margin:0 auto;}
+    h1{margin:0 0 6px;font-size:clamp(20px,3vw,30px);letter-spacing:.3px;}
+    .sub{margin:0;color:var(--muted);font-size:14px;line-height:1.5;}
+    main{max-width:1100px;margin:0 auto;padding:14px 18px 44px;display:grid;gap:16px;}
+    .grid{display:grid;gap:16px;grid-template-columns:1.1fr .9fr;}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));
+      border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+    .card h2{margin:0;padding:14px 16px 10px;font-size:16px;letter-spacing:.2px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.15);}
+    .card .body{padding:14px 16px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+    label{color:var(--muted);font-size:13px}
+    input,select,button{font:inherit}
+    input[type="number"],select{background:rgba(0,0,0,.25);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:10px;outline:none;min-width:110px;}
+    button{border:1px solid var(--border);background:rgba(124,92,255,.22);color:var(--text);border-radius:14px;padding:10px 12px;cursor:pointer;transition:.15s transform,.15s filter;}
+    button:hover{filter:brightness(1.08)}button:active{transform:translateY(1px)}
+    .btn2{background:rgba(29,211,176,.18)} .btn3{background:rgba(255,209,102,.18)} .btnDanger{background:rgba(255,92,138,.16)}
+    .muted{color:var(--muted)}
+    .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:999px;padding:6px 10px;background:rgba(0,0,0,.18);font-size:12px;color:var(--muted);white-space:nowrap;}
+    .timerPill{color:var(--text);border-color:rgba(255,255,255,.18);background:rgba(0,0,0,.28);}
+    .timerPill.low{border-color:rgba(255,209,102,.65);box-shadow:0 0 0 3px rgba(255,209,102,.08) inset;}
+    .timerPill.critical{border-color:rgba(255,92,138,.75);box-shadow:0 0 0 3px rgba(255,92,138,.10) inset;}
+
+    .scoreGrid{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr));}
+    @media (max-width:520px){.scoreGrid{grid-template-columns:1fr}}
+    .teamCard{border:1px solid var(--border);background:rgba(0,0,0,.18);border-radius:16px;padding:12px;display:grid;gap:10px;}
+    .teamTop{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+    .teamName{font-weight:700;letter-spacing:.2px;}
+    .points{font-size:clamp(28px,5vw,44px);font-weight:800;line-height:1;}
+    .members{color:var(--muted);font-size:12px;line-height:1.45;}
+    .tinyBtns{display:flex;gap:8px;flex-wrap:wrap;}
+    .tinyBtns button{padding:7px 10px;border-radius:12px;font-size:12px;background:rgba(255,255,255,.06);}
+
+    .qMeta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px;}
+    .qBox{border:1px solid var(--border);background:rgba(0,0,0,.18);border-radius:16px;padding:14px;display:grid;gap:10px;}
+    .qText{font-size:18px;font-weight:700;letter-spacing:.2px;line-height:1.35;}
+    .answers{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr));}
+    @media (max-width:700px){.answers{grid-template-columns:1fr}}
+    .ansBtn{text-align:left;padding:12px;border-radius:16px;background:rgba(255,255,255,.05);}
+    .ansBtn.correct{border:1px solid rgba(29,211,176,.7);background:rgba(29,211,176,.18);}
+    .ansBtn.wrong{border:1px solid rgba(255,92,138,.7);background:rgba(255,92,138,.14);}
+    .footerRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:10px;}
+    .bigToggle{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+    .notice{padding:10px 12px;border:1px dashed rgba(255,255,255,.25);border-radius:14px;background:rgba(0,0,0,.12);color:var(--muted);font-size:13px;line-height:1.45;}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Klassenquiz: Plattentektonik & Vulkanismus</h1>
+  <p class="sub">Jetzt im <b>Rundenmodus</b>: Teams sind automatisch der Reihe nach dran (Team 1 → Team 2 → …).</p>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="card">
+      <h2>Setup</h2>
+      <div class="body">
+        <div class="row">
+          <label for="teamsCount">Anzahl Teams</label>
+          <input id="teamsCount" type="number" min="2" max="10" value="2" />
+          <label for="questionsCount">Anzahl Fragen</label>
+          <input id="questionsCount" type="number" min="5" max="30" value="10" />
+          <label for="secondsPerQuestion">Sek./Frage</label>
+          <input id="secondsPerQuestion" type="number" min="5" max="90" value="20" />
+          <button id="btnMakeTeams" class="btn2">Teams zufällig erstellen</button>
+          <button id="btnStartQuiz">Quiz starten</button>
+          <button id="btnResetAll" class="btnDanger">Alles zurücksetzen</button>
+        </div>
+        <div class="notice"><b>Punkte:</b> richtig = <b>200–1000</b> (je nach Zeit), falsch/Timeout = <b>0</b>. <b>Teamwechsel</b> passiert automatisch nach jeder Frage.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Host-Controls</h2>
+      <div class="body">
+        <div class="row">
+          <label for="teamSelect">Antwortendes Team</label>
+          <select id="teamSelect"></select>
+
+          <label class="muted" style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" id="manualTeam" />
+            Team manuell wählen
+          </label>
+
+          <button id="btnReveal" class="btn3">Lösung anzeigen</button>
+          <button id="btnNext" class="btn2">Nächste Frage</button>
+        </div>
+        <div class="row">
+          <span class="pill" id="quizStatus">Noch nicht gestartet</span>
+          <span class="pill" id="progressPill">0 / 0</span>
+          <span class="pill" id="turnPill">Am Zug: –</span>
+          <span class="pill timerPill" id="timerPill">⏱️ 0</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Scoreboard</h2>
+    <div class="body"><div id="scoreGrid" class="scoreGrid"></div></div>
+  </section>
+
+  <section class="card">
+    <h2>Frage</h2>
+    <div class="body">
+      <div class="qBox">
+        <div class="qMeta">
+          <span class="pill" id="qTag">Bereit?</span>
+          <span class="pill" id="pointsPreview">Punkte: –</span>
+        </div>
+        <div class="qText" id="qText">Erstelle Teams und starte das Quiz.</div>
+        <div class="answers" id="answers"></div>
+        <div class="footerRow">
+          <div class="bigToggle">
+            <label class="muted"><input type="checkbox" id="shuffleAnswers" checked /> Antworten mischen</label>
+            <label class="muted"><input type="checkbox" id="autoNext" checked /> Auto-weiter nach Antwort</label>
+            <label class="muted"><input type="checkbox" id="timerEnabled" checked /> Timer aktiv</label>
+          </div>
+          <span class="muted" id="feedback"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const CLASS_NAMES = ["Lars", "Nico", "Luca", "Sofie", "Sophia", "Vitus", "Christopher", "Josh", "Ahmit", "Assil", "Gloria", "Rosha", "Jakob", "Hussein", "Francheska", "Bayan", "Royen"];
+const QUESTIONS = [{"q": "Was bezeichnet man als Lithosphäre?", "a": ["Den flüssigen Erdkern", "Die feste Gesteinshülle der Erde", "Die Atmosphäre", "Den Erdmantel insgesamt"], "c": 1}, {"q": "Aus welchen zwei Teilen besteht die Lithosphäre?", "a": ["Erdkern und Mantel", "Atmosphäre und Hydrosphäre", "Erdkruste und oberster Mantel", "Unterer und oberer Mantel"], "c": 2}, {"q": "Welche Schicht liegt direkt unter der Lithosphäre?", "a": ["Erdkern", "Asthenosphäre", "Atmosphäre", "Erdkruste"], "c": 1}, {"q": "Warum ist die Lithosphäre in Platten zerbrochen?", "a": ["Wegen der Erdrotation", "Wegen Bewegungen im Erdmantel", "Wegen Meteoriteneinschlägen", "Wegen der Gravitation des Mondes"], "c": 1}, {"q": "Wie nennt man die Bewegung der Erdplatten insgesamt?", "a": ["Vulkanismus", "Erosion", "Plattentektonik", "Sedimentation"], "c": 2}, {"q": "Wie viele große Erdplatten gibt es ungefähr?", "a": ["3", "5", "7", "20"], "c": 2}, {"q": "Auf welcher Erdplatte liegt Europa?", "a": ["Afrikanische Platte", "Eurasische Platte", "Amerikanische Platte", "Pazifische Platte"], "c": 1}, {"q": "Welche sind die drei Hauptarten der Plattenbewegung?", "a": ["Gleiten – Drehen – Sinken", "Konvergent – Divergent – Transform", "Hebung – Senkung – Bruch", "Vulkanisch – Seismisch – Magmatisch"], "c": 1}, {"q": "Welche vierte Art wird manchmal zusätzlich genannt?", "a": ["Subduktion", "Erosion", "Faltung", "Verwitterung"], "c": 0}, {"q": "Was passiert bei einer konvergierenden Plattenbewegung?", "a": ["Platten entfernen sich voneinander", "Platten gleiten aneinander vorbei", "Platten stoßen zusammen", "Eine Platte bleibt stehen"], "c": 2}, {"q": "Was passiert bei einer divergierenden Plattenbewegung?", "a": ["Platten stoßen zusammen", "Platten entfernen sich voneinander", "Platten kippen", "Platten verhaken sich"], "c": 1}, {"q": "Was passiert an einer transformen Plattengrenze?", "a": ["Eine Platte taucht ab", "Magma steigt auf", "Platten gleiten seitlich aneinander vorbei", "Neue Erdkruste entsteht"], "c": 2}, {"q": "Warum entstehen an Plattengrenzen häufig Erdbeben?", "a": ["Wegen des Wetters", "Wegen hoher Temperaturen", "Wegen Spannungen zwischen Platten", "Wegen Vulkanausbrüchen"], "c": 2}, {"q": "Wie heißt der Punkt im Erdinneren, an dem ein Erdbeben entsteht?", "a": ["Epizentrum", "Hypozentrum", "Fokuslinie", "Erdspalte"], "c": 1}, {"q": "Wie heißt der Punkt an der Erdoberfläche direkt darüber?", "a": ["Mantelpunkt", "Hypozentrum", "Epizentrum", "Bruchzone"], "c": 2}, {"q": "Wodurch werden Erdbeben ausgelöst?", "a": ["Wind und Regen", "Bewegung von Erdplatten", "Temperaturunterschiede", "Sonnenstrahlung"], "c": 1}, {"q": "Wo treten Erdbeben besonders häufig auf?", "a": ["In Wüsten", "In Polargebieten", "An Plattengrenzen", "Auf Inseln"], "c": 2}, {"q": "Welches Gerät misst Erdbeben?", "a": ["Thermometer", "Barometer", "Seismograf", "Hygrometer"], "c": 2}, {"q": "Wie nennt man Magma an der Erdoberfläche?", "a": ["Basalt", "Lava", "Asche", "Gestein"], "c": 1}, {"q": "Wo entstehen besonders viele Vulkane?", "a": ["An transformen Plattengrenzen", "An Plattengrenzen allgemein", "In der Erdmitte", "In Gebirgen ohne Plattengrenzen"], "c": 1}, {"q": "Wie entsteht ein Vulkan?", "a": ["Durch Regen und Wind", "Durch absinkende Erdplatten", "Durch aufsteigendes Magma", "Durch Erdbeben"], "c": 2}, {"q": "Welche drei Vulkantypen habt ihr gelernt?", "a": ["Feuer-, Eis-, Wasser-Vulkan", "Schild-, Schicht-, Aschevulkan", "Groß-, Mittel-, Klein-Vulkan", "Lava-, Gas-, Magmavulkan"], "c": 1}, {"q": "Was ist typisch für einen Schildvulkan?", "a": ["Steile Flanken", "Explosive Ausbrüche", "Flache, breite Form", "Viel Asche"], "c": 2}, {"q": "Was ist typisch für einen Schichtvulkan?", "a": ["Nur Lava", "Abwechselnde Schichten aus Lava und Asche", "Sehr flache Form", "Keine Ausbrüche"], "c": 1}, {"q": "Was ist typisch für einen Aschevulkan?", "a": ["Sehr große Höhe", "Flache Hänge", "Besteht hauptsächlich aus Asche", "Entsteht nur unter Wasser"], "c": 2}, {"q": "Warum sind Schildvulkane meist nicht sehr explosiv?", "a": ["Weil sie wenig Magma enthalten", "Weil das Magma sehr zähflüssig ist", "Weil das Magma dünnflüssig ist und Gase gut entweichen können", "Weil sie nur unter Wasser entstehen"], "c": 2}, {"q": "Welche Rolle spielen Gase bei einem Vulkanausbruch?", "a": ["Sie kühlen das Magma ab", "Sie verursachen den Druck im Vulkan", "Sie verhindern Ausbrüche", "Sie machen Lava fest"], "c": 1}, {"q": "Was versteht man unter dem „Pazifischen Feuerring“?", "a": ["Einen Ring aus Wüsten", "Eine Zone mit vielen Vulkanen und Erdbeben", "Einen Gürtel aus Gebirgen", "Eine Klimazone"], "c": 1}, {"q": "Warum treten Erdbeben oft gemeinsam mit Vulkanismus auf?", "a": ["Wegen des Wetters", "Wegen der Erdrotation", "Wegen Bewegungen von Magma und Erdplatten", "Wegen des Mondes"], "c": 2}, {"q": "Welche Aussage zur Planet-Schule-Doku über Vulkanismus ist richtig?", "a": ["Vulkane entstehen zufällig", "Vulkanismus hat nichts mit Plattentektonik zu tun", "Vulkane entstehen häufig an Plattengrenzen oder Hotspots", "Alle Vulkane sind gleich"], "c": 2}];
+
+const shuffle = (arr) => {
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+};
+const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
+const splitIntoTeams = (names, teamCount) => {
+  const shuffled = shuffle(names);
+  const teams = Array.from({length: teamCount}, (_,i)=>({ name:`Team ${i+1}`, members:[], points:0 }));
+  shuffled.forEach((n, idx)=> teams[idx % teamCount].members.push(n));
+  return teams;
+};
+
+function calcPoints(remainingMs, totalMs){
+  const minPts = 200, maxPts = 1000;
+  const t = clamp(remainingMs / totalMs, 0, 1);
+  return Math.round(minPts + (maxPts - minPts) * t);
+}
+
+let teams = [];
+let quiz = {
+  active:false, questions:[], index:0, locked:false,
+  startedAt:0, totalMs:20000, remainingMs:0, timerId:null,
+  turnIndex: 0
+};
+
+const elTeamsCount = document.getElementById("teamsCount");
+const elQuestionsCount = document.getElementById("questionsCount");
+const elSecondsPerQuestion = document.getElementById("secondsPerQuestion");
+const elScoreGrid = document.getElementById("scoreGrid");
+const elTeamSelect = document.getElementById("teamSelect");
+const elManualTeam = document.getElementById("manualTeam");
+
+const elQuizStatus = document.getElementById("quizStatus");
+const elProgressPill = document.getElementById("progressPill");
+const elTurnPill = document.getElementById("turnPill");
+
+const elTimerPill = document.getElementById("timerPill");
+const elPointsPreview = document.getElementById("pointsPreview");
+const elQTag = document.getElementById("qTag");
+const elQText = document.getElementById("qText");
+const elAnswers = document.getElementById("answers");
+const elFeedback = document.getElementById("feedback");
+const elShuffleAnswers = document.getElementById("shuffleAnswers");
+const elAutoNext = document.getElementById("autoNext");
+const elTimerEnabled = document.getElementById("timerEnabled");
+
+function renderTeamSelect(){
+  elTeamSelect.innerHTML = "";
+  teams.forEach((t, i)=>{
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = t.name;
+    elTeamSelect.appendChild(opt);
+  });
+}
+
+function syncTurnUI(){
+  if(!teams.length) {
+    elTurnPill.textContent = "Am Zug: –";
+    return;
+  }
+  const t = teams[quiz.turnIndex];
+  elTurnPill.textContent = "Am Zug: " + (t ? t.name : "–");
+  if(!elManualTeam.checked) {
+    elTeamSelect.value = String(quiz.turnIndex);
+  }
+  elTeamSelect.disabled = !elManualTeam.checked;
+}
+
+function renderScoreboard(){
+  elScoreGrid.innerHTML = "";
+  if(teams.length === 0) {
+    const p = document.createElement("div");
+    p.className = "muted";
+    p.textContent = "Noch keine Teams – bitte im Setup erstellen.";
+    elScoreGrid.appendChild(p);
+    return;
+  }
+  const sorted = teams.slice().sort((a,b)=> b.points - a.points);
+  sorted.forEach((t)=>{
+    const card = document.createElement("div");
+    card.className = "teamCard";
+    card.innerHTML = `
+      <div class="teamTop">
+        <div class="teamName">${t.name}</div>
+        <div class="points">${t.points}</div>
+      </div>
+      <div class="members">${t.members.join(", ")}</div>
+      <div class="tinyBtns">
+        <button>+100</button>
+        <button>−100</button>
+        <button>Reset</button>
+      </div>
+    `;
+    const [plus, minus, reset] = card.querySelectorAll("button");
+    plus.onclick = ()=>{ t.points += 100; renderScoreboard(); };
+    minus.onclick = ()=>{ t.points = Math.max(0, t.points - 100); renderScoreboard(); };
+    reset.onclick = ()=>{ t.points = 0; renderScoreboard(); };
+    elScoreGrid.appendChild(card);
+  });
+}
+
+function setStatus(){
+  elQuizStatus.textContent = quiz.active ? "Quiz läuft" : "Noch nicht gestartet";
+  elProgressPill.textContent = `${quiz.active ? (quiz.index+1) : 0} / ${quiz.questions.length || 0}`;
+  syncTurnUI();
+}
+
+function setTimerUI(ms){
+  const sec = Math.ceil(ms/1000);
+  elTimerPill.textContent = `⏱️ ${sec}s`;
+  elTimerPill.classList.remove("low","critical");
+  if(sec <= 7) elTimerPill.classList.add("low");
+  if(sec <= 3) elTimerPill.classList.add("critical");
+  elPointsPreview.textContent = `Punkte: ${calcPoints(ms, quiz.totalMs)}`;
+}
+
+function stopTimer(){
+  if(quiz.timerId){ clearInterval(quiz.timerId); quiz.timerId = null; }
+}
+
+function startTimer(){
+  stopTimer();
+  if(!elTimerEnabled.checked){
+    quiz.remainingMs = quiz.totalMs;
+    setTimerUI(quiz.remainingMs);
+    return;
+  }
+  quiz.startedAt = Date.now();
+  quiz.remainingMs = quiz.totalMs;
+  setTimerUI(quiz.remainingMs);
+  quiz.timerId = setInterval(()=>{
+    const elapsed = Date.now() - quiz.startedAt;
+    quiz.remainingMs = Math.max(0, quiz.totalMs - elapsed);
+    setTimerUI(quiz.remainingMs);
+    if(quiz.remainingMs <= 0){ stopTimer(); handleTimeout(); }
+  }, 80);
+}
+
+function renderQuestion(){
+  elFeedback.textContent = "";
+  elAnswers.innerHTML = "";
+  quiz.locked = false;
+  stopTimer();
+
+  if(!quiz.active || quiz.questions.length === 0){
+    elQTag.textContent = "Bereit?";
+    elQText.textContent = "Erstelle Teams und starte das Quiz.";
+    elTimerPill.textContent = "⏱️ 0";
+    elPointsPreview.textContent = "Punkte: –";
+    setStatus();
+    return;
+  }
+
+  const item = quiz.questions[quiz.index];
+  elQTag.textContent = `Frage ${quiz.index+1}`;
+  elQText.textContent = item.q;
+
+  let answerObjs = item.a.map((txt, idx)=>({txt, idx}));
+  if(elShuffleAnswers.checked) answerObjs = shuffle(answerObjs);
+
+  answerObjs.forEach((ans)=>{
+    const btn = document.createElement("button");
+    btn.className = "ansBtn";
+    btn.textContent = ans.txt;
+    btn.onclick = ()=> handleAnswerClick(ans.idx, btn, item.c);
+    elAnswers.appendChild(btn);
+  });
+
+  setStatus();
+  startTimer();
+}
+
+function revealCorrect(){
+  if(!quiz.active) return;
+  const item = quiz.questions[quiz.index];
+  [...elAnswers.querySelectorAll("button")].forEach(btn=>{
+    const originalIndex = item.a.indexOf(btn.textContent);
+    if(originalIndex === item.c) btn.classList.add("correct");
+  });
+  elFeedback.textContent = "✅ Lösung markiert.";
+}
+
+function makeTeams(){
+  const teamCount = clamp(parseInt(elTeamsCount.value || "2", 10), 2, 10);
+  elTeamsCount.value = teamCount;
+  teams = splitIntoTeams(CLASS_NAMES, teamCount);
+  quiz.turnIndex = 0;
+  renderTeamSelect();
+  renderScoreboard();
+  syncTurnUI();
+}
+
+function startQuiz(){
+  if(teams.length === 0) makeTeams();
+
+  const count = clamp(parseInt(elQuestionsCount.value || "10", 10), 5, QUESTIONS.length);
+  elQuestionsCount.value = count;
+
+  const sec = clamp(parseInt(elSecondsPerQuestion.value || "20", 10), 5, 90);
+  elSecondsPerQuestion.value = sec;
+  quiz.totalMs = sec * 1000;
+
+  quiz.questions = shuffle(QUESTIONS).slice(0, count);
+  quiz.index = 0;
+  quiz.active = true;
+  quiz.turnIndex = 0; // Start bei Team 1
+  syncTurnUI();
+  renderQuestion();
+}
+
+function resetAll(){
+  stopTimer();
+  teams = [];
+  quiz = { active:false, questions:[], index:0, locked:false, startedAt:0, totalMs:20000, remainingMs:0, timerId:null, turnIndex:0 };
+  elTeamSelect.innerHTML = "";
+  renderScoreboard();
+  renderQuestion();
+}
+
+function advanceTurn(){
+  if(!teams.length) return;
+  quiz.turnIndex = (quiz.turnIndex + 1) % teams.length;
+  syncTurnUI();
+}
+
+function nextQuestion(){
+  stopTimer();
+  if(!quiz.active) return;
+
+  // Nach jeder Frage: nächstes Team ist dran
+  advanceTurn();
+
+  if(quiz.index < quiz.questions.length - 1){
+    quiz.index += 1;
+    renderQuestion();
+  } else {
+    quiz.active = false;
+    setStatus();
+    elQTag.textContent = "Fertig!";
+    elQText.textContent = "🎉 Quiz beendet! Gewinner-Team steht im Scoreboard oben.";
+    elAnswers.innerHTML = "";
+    elFeedback.textContent = "";
+    elPointsPreview.textContent = "Punkte: –";
+    elTimerPill.textContent = "⏱️ 0";
+  }
+}
+
+function handleTimeout(){
+  if(!quiz.active || quiz.locked) return;
+  quiz.locked = true;
+
+  const item = quiz.questions[quiz.index];
+  [...elAnswers.querySelectorAll("button")].forEach(btn=>{
+    const originalIndex = item.a.indexOf(btn.textContent);
+    if(originalIndex === item.c) btn.classList.add("correct");
+  });
+
+  elFeedback.textContent = "⌛ Zeit abgelaufen – 0 Punkte.";
+  if(elAutoNext.checked) setTimeout(nextQuestion, 650);
+}
+
+function handleAnswerClick(chosenIndex, clickedBtn, correctIndex){
+  if(!quiz.active || quiz.locked) return;
+  stopTimer();
+  quiz.locked = true;
+
+  const item = quiz.questions[quiz.index];
+  [...elAnswers.querySelectorAll("button")].forEach(btn=>{
+    const originalIndex = item.a.indexOf(btn.textContent);
+    if(originalIndex === correctIndex) btn.classList.add("correct");
+  });
+  if(chosenIndex !== correctIndex) clickedBtn.classList.add("wrong");
+
+  const teamIdx = parseInt(elTeamSelect.value || String(quiz.turnIndex), 10);
+  const team = teams[teamIdx];
+
+  if(team){
+    if(chosenIndex === correctIndex){
+      const pts = calcPoints(quiz.remainingMs || quiz.totalMs, quiz.totalMs);
+      team.points += pts;
+      elFeedback.textContent = `✅ ${team.name} bekommt +${pts} Punkte!`;
+    } else {
+      elFeedback.textContent = `❌ Leider falsch (${team.name}). 0 Punkte.`;
+    }
+    renderScoreboard();
+  }
+
+  if(elAutoNext.checked) setTimeout(nextQuestion, 650);
+}
+
+document.getElementById("btnMakeTeams").addEventListener("click", makeTeams);
+document.getElementById("btnStartQuiz").addEventListener("click", startQuiz);
+document.getElementById("btnResetAll").addEventListener("click", resetAll);
+document.getElementById("btnNext").addEventListener("click", nextQuestion);
+document.getElementById("btnReveal").addEventListener("click", revealCorrect);
+
+elTimerEnabled.addEventListener("change", ()=>{ if(quiz.active && !quiz.locked) startTimer(); });
+elManualTeam.addEventListener("change", syncTurnUI);
+
+renderScoreboard();
+renderQuestion();
+</script>
+</body>
+</html>
